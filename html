@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi de Prise de Masse</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>tailwind.config={theme:{extend:{colors:{primary:'#4F46E5',secondary:'#10B981'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <style>
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            background-color: white;
+            cursor: pointer;
+            position: relative;
+        }
+        input[type="checkbox"]:checked {
+            background-color: #4F46E5;
+            border-color: #4F46E5;
+        }
+        input[type="checkbox"]:checked::after {
+            content: "";
+            position: absolute;
+            top: 0.2rem;
+            left: 0.4rem;
+            width: 0.3rem;
+            height: 0.6rem;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 3rem;
+            height: 1.5rem;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e5e7eb;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 1.1rem;
+            width: 1.1rem;
+            left: 0.2rem;
+            bottom: 0.2rem;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #4F46E5;
+        }
+        input:checked + .slider:before {
+            transform: translateX(1.5rem);
+        }
+        .progress-bar {
+            height: 0.75rem;
+            border-radius: 0.375rem;
+            background-color: #e5e7eb;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background-color: #4F46E5;
+            transition: width 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-white shadow-sm">
+            <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+                <h1 class="text-xl font-['Pacifico'] text-primary">MuscuTrack</h1>
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100">
+                        <i class="ri-user-line text-gray-600"></i>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Tabs Navigation -->
+        <div class="bg-white shadow-sm">
+            <div class="container mx-auto px-4">
+                <nav class="flex overflow-x-auto py-2 space-x-4 no-scrollbar">
+                    <button class="tab-button whitespace-nowrap px-4 py-2 font-medium text-primary border-b-2 border-primary" data-tab="profile">Profil</button>
+                    <button class="tab-button whitespace-nowrap px-4 py-2 font-medium text-gray-500 hover:text-primary" data-tab="program">Programme</button>
+                    <button class="tab-button whitespace-nowrap px-4 py-2 font-medium text-gray-500 hover:text-primary" data-tab="nutrition">Nutrition</button>
+                    <button class="tab-button whitespace-nowrap px-4 py-2 font-medium text-gray-500 hover:text-primary" data-tab="tracking">Suivi</button>
+                    <button class="tab-button whitespace-nowrap px-4 py-2 font-medium text-gray-500 hover:text-primary" data-tab="tips">Conseils</button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="flex-grow container mx-auto px-4 py-6">
+            <!-- Profile Tab -->
+            <div id="profile" class="tab-content active">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Profile Card -->
+                    <div class="md:col-span-2 bg-white rounded shadow-sm p-6">
+                        <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
+                            <div class="w-32 h-32 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                                <img src="https://readdy.ai/api/search-image?query=athletic%20teenager%20boy%20with%20short%20hair%2C%20simple%20portrait%20photo%2C%20neutral%20background%2C%20natural%20lighting%2C%20friendly%20expression&width=300&height=300&seq=1&orientation=squarish" alt="Photo de profil" class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h2 class="text-2xl font-bold text-gray-800 mb-4">Mon Profil</h2>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="bg-gray-50 p-4 rounded">
+                                        <p class="text-sm text-gray-500">Âge</p>
+                                        <p class="text-lg font-semibold">14 ans</p>
+                                    </div>
+                                    <div class="bg-gray-50 p-4 rounded">
+                                        <p class="text-sm text-gray-500">Taille</p>
+                                        <p class="text-lg font-semibold">1m73</p>
+                                    </div>
+                                    <div class="bg-gray-50 p-4 rounded">
+                                        <p class="text-sm text-gray-500">Poids actuel</p>
+                                        <p class="text-lg font-semibold">54 kg</p>
+                                    </div>
+                                    <div class="bg-gray-50 p-4 rounded">
+                                        <p class="text-sm text-gray-500">Objectif</p>
+                                        <p class="text-lg font-semibold">61 kg</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-8">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-semibold text-gray-700">Progression vers l'objectif</h3>
+                                <span class="text-sm font-medium text-primary">0 / 7 kg</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-bar-fill" style="width: 0%"></div>
+                            </div>
+                            <p class="mt-2 text-sm text-gray-500">Objectif : +7 kg de muscle avant le 1er septembre 2025</p>
+                        </div>
+
+                        <div class="mt-8">
+                            <h3 class="font-semibold text-gray-700 mb-4">Date limite</h3>
+                            <div class="bg-gray-50 p-4 rounded">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <p class="text-sm text-gray-500">Aujourd'hui</p>
+                                        <p class="text-lg font-semibold">8 mai 2025</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Objectif</p>
+                                        <p class="text-lg font-semibold">1 septembre 2025</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Jours restants</p>
+                                        <p class="text-lg font-semibold text-primary">116 jours</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Equipment Card -->
+                    <div class="bg-white rounded shadow-sm p-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">Mon Équipement</h2>
+                        <ul class="space-y-4">
+                            <li class="flex items-center gap-3">
+                                <div class="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full text-primary">
+                                    <i class="ri-home-gear-line"></i>
+                                </div>
+                                <span class="font-medium">Station Homcom (max 66 kg)</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <div class="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full text-primary">
+                                    <i class="ri-shape-line"></i>
+                                </div>
+                                <span class="font-medium">Élastiques de résistance</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <div class="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full text-primary">
+                                    <i class="ri-barbell-line"></i>
+                                </div>
+                                <span class="font-medium">Barres et poids</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <div class="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full text-primary">
+                                    <i class="ri-hand-coin-line"></i>
+                                </div>
+                                <span class="font-medium">Station dips</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <div class="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full text-primary">
+                                    <i class="ri-pushpin-line"></i>
+                                </div>
+                                <span class="font-medium">Zone pompes</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Program Tab -->
+            <div id="program" class="tab-content">
+                <div class="bg-white rounded shadow-sm p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Programme d'Entraînement</h2>
+                    
+                    <!-- Program Navigation -->
+                    <div class="flex overflow-x-auto space-x-2 mb-6 pb-2">
+                        <button class="program-day-btn whitespace-nowrap px-4 py-2 !rounded-button bg-primary text-white font-medium" data-day="lundi">Lundi</button>
+                        <button class="program-day-btn whitespace-nowrap px-4 py-2 !rounded-button bg-gray-200 text-gray-700 font-medium" data-day="mardi">Mardi</button>
+                        <button class="program-day-btn whitespace-nowrap px-4 py-2 !rounded-button bg-gray-200 text-gray-700 font-medium" data-day="mercredi">Mercredi</button>
+                        <button class="program-day-btn whitespace-nowrap px-4 py-2 !rounded-button bg-gray-200 text-gray-700 font-medium" data-day="jeudi">Jeudi</button>
+                        <button class="program-day-btn whitespace-nowrap px-4 py-2 !rounded-button bg-gray-200 text-gray-700 font-medium" data-day="vendredi">Vendredi</button>
+                        <button class="program-day-btn whitespace-nowrap px-4 py-2 !rounded-button bg-gray-200 text-gray-700 font-medium" data-day="samedi">Samedi</button>
+                        <button class="program-day-btn whitespace-nowrap px-4 py-2 !rounded-button bg-gray-200 text-gray-700 font-medium" data-day="dimanche">Dimanche</button>
+                    </div>
+
+                    <!-- Program Content -->
+                    <div class="program-content">
+                        <!-- Monday (Lundi) -->
+                        <div class="program-day active" data-day="lundi">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 mr-4">
+                                    <i class="ri-user-line ri-lg"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-blue-600">Dos & Biceps</h3>
+                            </div>
+
+                            <div class="space-y-6">
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Tractions (ou tirage vertical)</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-blue-100 text-blue-600 px-2 py-1 rounded mr-2">3 séries</span>
+                                        <span class="bg-blue-100 text-blue-600 px-2 py-1 rounded">8-10 répétitions</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Technique : Saisissez la barre, mains écartées. Tirez votre corps vers le haut en contractant le dos jusqu'à ce que votre menton dépasse la barre.</p>
+                                    <p class="text-sm text-gray-500">Repos : 90 secondes entre les séries</p>
+                                </div>
+
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Rowing avec haltères</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-blue-100 text-blue-600 px-2 py-1 rounded mr-2">3 séries</span>
+                                        <span class="bg-blue-100 text-blue-600 px-2 py-1 rounded">10-12 répétitions</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Technique : Penchez-vous en avant, dos droit. Tirez l'haltère vers votre hanche en contractant le dos.</p>
+                                    <p class="text-sm text-gray-500">Repos : 60-90 secondes entre les séries</p>
+                                </div>
+
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Curl biceps avec haltères</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-blue-100 text-blue-600 px-2 py-1 rounded mr-2">3 séries</span>
+                                        <span class="bg-blue-100 text-blue-600 px-2 py-1 rounded">10-12 répétitions</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Technique : Debout, bras le long du corps. Fléchissez les coudes pour amener les haltères vers vos épaules.</p>
+                                    <p class="text-sm text-gray-500">Repos : 60 secondes entre les séries</p>
+                                </div>
+
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Curl marteau</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-blue-100 text-blue-600 px-2 py-1 rounded mr-2">3 séries</span>
+                                        <span class="bg-blue-100 text-blue-600 px-2 py-1 rounded">10-12 répétitions</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Technique : Comme le curl biceps mais avec les paumes face à face pendant tout le mouvement.</p>
+                                    <p class="text-sm text-gray-500">Repos : 60 secondes entre les séries</p>
+                                </div>
+                            </div>
+
+                            <button class="mt-6 px-6 py-3 bg-primary text-white font-medium !rounded-button shadow-sm hover:bg-primary/90 transition whitespace-nowrap">Terminer la séance</button>
+                        </div>
+
+                        <!-- Tuesday (Mardi) -->
+                        <div class="program-day hidden" data-day="mardi">
+                            <div class="flex items-center justify-center h-40">
+                                <div class="text-center">
+                                    <div class="w-16 h-16 mx-auto flex items-center justify-center rounded-full bg-gray-100 text-gray-500">
+                                        <i class="ri-rest-time-line ri-xl"></i>
+                                    </div>
+                                    <h3 class="mt-4 text-xl font-medium text-gray-700">Jour de repos</h3>
+                                    <p class="mt-2 text-gray-500">Récupération active ou légère cardio si souhaité</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Wednesday (Mercredi) -->
+                        <div class="program-day hidden" data-day="mercredi">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 flex items-center justify-center rounded-full bg-green-100 text-green-600 mr-4">
+                                    <i class="ri-walk-line ri-lg"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-green-600">Jambes</h3>
+                            </div>
+
+                            <div class="space-y-6">
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Squats</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-green-100 text-green-600 px-2 py-1 rounded mr-2">3 séries</span>
+                                        <span class="bg-green-100 text-green-600 px-2 py-1 rounded">10-12 répétitions</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Technique : Pieds écartés largeur d'épaules, descendez comme pour vous asseoir, en gardant le dos droit et les genoux alignés avec les pieds.</p>
+                                    <p class="text-sm text-gray-500">Repos : 90 secondes entre les séries</p>
+                                </div>
+
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Fentes avant</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-green-100 text-green-600 px-2 py-1 rounded mr-2">3 séries</span>
+                                        <span class="bg-green-100 text-green-600 px-2 py-1 rounded">10 répétitions par jambe</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Technique : Faites un grand pas en avant, fléchissez les genoux pour descendre, puis revenez à la position de départ.</p>
+                                    <p class="text-sm text-gray-500">Repos : 60-90 secondes entre les séries</p>
+                                </div>
+
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Extensions de jambes</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-green-100 text-green-600 px-2 py-1 rounded mr-2">3 séries</span>
+                                        <span class="bg-green-100 text-green-600 px-2 py-1 rounded">12-15 répétitions</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Technique : Assis sur la machine, étendez les jambes devant vous en contractant les quadriceps.</p>
+                                    <p class="text-sm text-gray-500">Repos : 60 secondes entre les séries</p>
+                                </div>
+
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Mollets debout</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-green-100 text-green-600 px-2 py-1 rounded mr-2">3 séries</span>
+                                        <span class="bg-green-100 text-green-600 px-2 py-1 rounded">15-20 répétitions</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Technique : Debout sur le bord d'une marche, montez sur la pointe des pieds puis redescendez.</p>
+                                    <p class="text-sm text-gray-500">Repos : 45-60 secondes entre les séries</p>
+                                </div>
+                            </div>
+
+                            <button class="mt-6 px-6 py-3 bg-primary text-white font-medium !rounded-button shadow-sm hover:bg-primary/90 transition whitespace-nowrap">Terminer la séance</button>
+                        </div>
+
+                        <!-- Thursday (Jeudi) -->
+                        <div class="program-day hidden" data-day="jeudi">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 flex items-center justify-center rounded-full bg-red-100 text-red-600 mr-4">
+                                    <i class="ri-heart-pulse-line ri-lg"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-red-600">Pectoraux & Triceps</h3>
+                            </div>
+
+                            <div class="space-y-6">
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Développé couché</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-red-100 text-red-600 px-2 py-1 rounded mr-2">3 séries</span>
+                                        <span class="bg-red-100 text-red-600 px-2 py-1 rounded">8-10 répétitions</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Technique : Allongé sur un banc, poussez la barre vers le haut en contractant les pectoraux, puis redescendez lentement.</p>
+                                    <p class="text-sm text-gray-500">Repos : 90 secondes entre les séries</p>
+                                </div>
+
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Pompes</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-red-100 text-red-600 px-2 py-1 rounded mr-2">3 séries</span>
+                                        <span class="bg-red-100 text-red-600 px-2 py-1 rounded">Max répétitions</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Technique : En position de planche, descendez en fléchissant les coudes puis remontez en les tendant.</p>
+                                    <p class="text-sm text-gray-500">Repos : 60-90 secondes entre les séries</p>
+                                </div>
+
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Extensions triceps à la poulie</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-red-100 text-red-600 px-2 py-1 rounded mr-2">3 séries</span>
+                                        <span class="bg-red-100 text-red-600 px-2 py-1 rounded">10-12 répétitions</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Technique : Debout face à la poulie haute, tirez la corde vers le bas en tendant les bras.</p>
+                                    <p class="text-sm text-gray-500">Repos : 60 secondes entre les séries</p>
+                                </div>
+
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Dips</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-red-100 text-red-600 px-2 py-1 rounded mr-2">3 séries</span>
+                                        <span class="bg-red-100 text-red-600 px-2 py-1 rounded">8-10 répétitions</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Technique : En appui sur les barres parallèles, fléchissez les coudes pour descendre puis remontez.</p>
+                                    <p class="text-sm text-gray-500">Repos : 90 secondes entre les séries</p>
+                                </div>
+                            </div>
+
+                            <button class="mt-6 px-6 py-3 bg-primary text-white font-medium !rounded-button shadow-sm hover:bg-primary/90 transition whitespace-nowrap">Terminer la séance</button>
+                        </div>
+
+                        <!-- Friday (Vendredi) -->
+                        <div class="program-day hidden" data-day="vendredi">
+                            <div class="flex items-center justify-center h-40">
+                                <div class="text-center">
+                                    <div class="w-16 h-16 mx-auto flex items-center justify-center rounded-full bg-gray-100 text-gray-500">
+                                        <i class="ri-rest-time-line ri-xl"></i>
+                                    </div>
+                                    <h3 class="mt-4 text-xl font-medium text-gray-700">Jour de repos</h3>
+                                    <p class="mt-2 text-gray-500">Récupération active ou légère cardio si souhaité</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Saturday (Samedi) -->
+                        <div class="program-day hidden" data-day="samedi">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 flex items-center justify-center rounded-full bg-purple-100 text-purple-600 mr-4">
+                                    <i class="ri-body-scan-line ri-lg"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-purple-600">Full Body</h3>
+                            </div>
+
+                            <div class="space-y-6">
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Squat avec poids</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-purple-100 text-purple-600 px-2 py-1 rounded mr-2">3 séries</span>
+                                        <span class="bg-purple-100 text-purple-600 px-2 py-1 rounded">10 répétitions</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Technique : Squat classique avec haltères ou barre sur les épaules.</p>
+                                    <p class="text-sm text-gray-500">Repos : 90 secondes entre les séries</p>
+                                </div>
+
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Développé épaules</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-purple-100 text-purple-600 px-2 py-1 rounded mr-2">3 séries</span>
+                                        <span class="bg-purple-100 text-purple-600 px-2 py-1 rounded">10 répétitions</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Technique : Assis ou debout, poussez les haltères au-dessus de votre tête.</p>
+                                    <p class="text-sm text-gray-500">Repos : 60-90 secondes entre les séries</p>
+                                </div>
+
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Rowing à un bras</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-purple-100 text-purple-600 px-2 py-1 rounded mr-2">3 séries</span>
+                                        <span class="bg-purple-100 text-purple-600 px-2 py-1 rounded">10 répétitions par bras</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Technique : Un genou et une main sur un banc, tirez l'haltère vers votre hanche.</p>
+                                    <p class="text-sm text-gray-500">Repos : 60 secondes entre les séries</p>
+                                </div>
+
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Planche abdominale</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-purple-100 text-purple-600 px-2 py-1 rounded mr-2">3 séries</span>
+                                        <span class="bg-purple-100 text-purple-600 px-2 py-1 rounded">30-45 secondes</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Technique : En appui sur les avant-bras et les orteils, maintenez votre corps en ligne droite.</p>
+                                    <p class="text-sm text-gray-500">Repos : 45-60 secondes entre les séries</p>
+                                </div>
+                            </div>
+
+                            <button class="mt-6 px-6 py-3 bg-primary text-white font-medium !rounded-button shadow-sm hover:bg-primary/90 transition whitespace-nowrap">Terminer la séance</button>
+                        </div>
+
+                        <!-- Sunday (Dimanche) -->
+                        <div class="program-day hidden" data-day="dimanche">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 flex items-center justify-center rounded-full bg-orange-100 text-orange-600 mr-4">
+                                    <i class="ri-run-line ri-lg"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-orange-600">Optionnel (Cardio ou Récupération)</h3>
+                            </div>
+
+                            <div class="space-y-6">
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Cardio léger</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-orange-100 text-orange-600 px-2 py-1 rounded">20-30 minutes</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Options : Marche rapide, vélo à intensité modérée, natation légère.</p>
+                                    <p class="text-sm text-gray-500">Intensité : Modérée (pouvoir tenir une conversation)</p>
+                                </div>
+
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800 mb-2">Étirements</h4>
+                                    <div class="flex items-center text-sm text-gray-600 mb-3">
+                                        <span class="bg-orange-100 text-orange-600 px-2 py-1 rounded">15-20 minutes</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">Technique : Étirements statiques pour tous les groupes musculaires, maintenir 20-30 secondes chacun.</p>
+                                </div>
+
+                                <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 flex items-center justify-center rounded-full bg-orange-100 text-orange-600 mr-3">
+                                            <i class="ri-information-line"></i>
+                                        </div>
+                                        <h4 class="font-semibold text-gray-800">Note importante</h4>
+                                    </div>
+                                    <p class="mt-3 text-sm text-gray-600">Cette journée est optionnelle. Si vous vous sentez fatigué, privilégiez le repos complet. La récupération est essentielle pour la croissance musculaire.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nutrition Tab -->
+            <div id="nutrition" class="tab-content">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Calories and Macros -->
+                    <div class="md:col-span-2 bg-white rounded shadow-sm p-6">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Plan Nutritionnel</h2>
+                        
+                        <div class="mb-8">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-4">Objectif Calorique Quotidien</h3>
+                            <div class="bg-primary/5 p-4 rounded-lg">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-gray-700 font-medium">Calories totales</span>
+                                    <span class="text-2xl font-bold text-primary">2500 - 2700 kcal</span>
+                                </div>
+                                <p class="mt-2 text-sm text-gray-600">Pour une prise de masse musculaire, tu dois maintenir un surplus calorique modéré.</p>
+                            </div>
+                        </div>
+
+                        <div class="mb-8">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-4">Répartition des Macronutriments</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-blue-50 p-4 rounded-lg">
+                                    <div class="flex items-center mb-2">
+                                        <div class="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 mr-2">
+                                            <i class="ri-meat-line"></i>
+                                        </div>
+                                        <h4 class="font-medium text-blue-600">Protéines</h4>
+                                    </div>
+                                    <p class="text-2xl font-bold text-gray-800 mb-1">120 - 135 g</p>
+                                    <p class="text-sm text-gray-600">20% des calories totales</p>
+                                </div>
+                                <div class="bg-yellow-50 p-4 rounded-lg">
+                                    <div class="flex items-center mb-2">
+                                        <div class="w-8 h-8 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600 mr-2">
+                                            <i class="ri-bread-line"></i>
+                                        </div>
+                                        <h4 class="font-medium text-yellow-600">Glucides</h4>
+                                    </div>
+                                    <p class="text-2xl font-bold text-gray-800 mb-1">320 - 350 g</p>
+                                    <p class="text-sm text-gray-600">55% des calories totales</p>
+                                </div>
+                                <div class="bg-green-50 p-4 rounded-lg">
+                                    <div class="flex items-center mb-2">
+                                        <div class="w-8 h-8 flex items-center justify-center rounded-full bg-green-100 text-green-600 mr-2">
+                                            <i class="ri-oil-line"></i>
+                                        </div>
+                                        <h4 class="font-medium text-green-600">Lipides</h4>
+                                    </div>
+                                    <p class="text-2xl font-bold text-gray-800 mb-1">80 - 120 g</p>
+                                    <p class="text-sm text-gray-600">25% des calories totales</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-700 mb-4">Visualisation des Macros</h3>
+                            <div class="h-64" id="macrosChart"></div>
+                        </div>
+                    </div>
+
+                    <!-- Lipids Info -->
+                    <div class="bg-white rounded shadow-sm p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Guide des Lipides</h3>
+                        
+                        <div class="mb-6">
+                            <div class="flex items-center mb-2">
+                                <div class="w-4 h-4 rounded-full bg-green-500 mr-2"></div>
+                                <h4 class="font-medium text-gray-800">Bons Lipides</h4>
+                            </div>
+                            <ul class="ml-6 space-y-2 text-sm text-gray-600">
+                                <li class="flex items-center">
+                                    <i class="ri-check-line text-green-500 mr-2"></i>
+                                    <span>Huile d'olive</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-check-line text-green-500 mr-2"></i>
+                                    <span>Avocats</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-check-line text-green-500 mr-2"></i>
+                                    <span>Poissons gras (saumon, thon)</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-check-line text-green-500 mr-2"></i>
+                                    <span>Noix et graines</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-check-line text-green-500 mr-2"></i>
+                                    <span>Beurre de cacahuète naturel</span>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <div class="flex items-center mb-2">
+                                <div class="w-4 h-4 rounded-full bg-red-500 mr-2"></div>
+                                <h4 class="font-medium text-gray-800">Mauvais Lipides</h4>
+                            </div>
+                            <ul class="ml-6 space-y-2 text-sm text-gray-600">
+                                <li class="flex items-center">
+                                    <i class="ri-close-line text-red-500 mr-2"></i>
+                                    <span>Huiles hydrogénées</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-close-line text-red-500 mr-2"></i>
+                                    <span>Fritures</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-close-line text-red-500 mr-2"></i>
+                                    <span>Viennoiseries industrielles</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-close-line text-red-500 mr-2"></i>
+                                    <span>Snacks transformés</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-close-line text-red-500 mr-2"></i>
+                                    <span>Charcuteries grasses</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="p-4 bg-yellow-50 rounded-lg">
+                            <div class="flex items-center mb-2">
+                                <div class="w-8 h-8 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600 mr-2">
+                                    <i class="ri-lightbulb-line"></i>
+                                </div>
+                                <h4 class="font-medium text-gray-800">Conseil important</h4>
+                            </div>
+                            <p class="text-sm text-gray-600">Les lipides sont essentiels pour la production d'hormones, notamment la testostérone qui favorise la croissance musculaire. Ne les néglige pas dans ton alimentation !</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Meal Examples -->
+                <div class="mt-6 bg-white rounded shadow-sm p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Exemples de Repas</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-800 mb-3">Petit-déjeuner (environ 650 kcal)</h4>
+                            <ul class="space-y-2 text-sm text-gray-600">
+                                <li class="flex items-center">
+                                    <i class="ri-checkbox-circle-line text-primary mr-2"></i>
+                                    <span>3 œufs brouillés (21g protéines)</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-checkbox-circle-line text-primary mr-2"></i>
+                                    <span>2 tranches de pain complet (30g glucides)</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-checkbox-circle-line text-primary mr-2"></i>
+                                    <span>1 avocat (15g lipides sains)</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-checkbox-circle-line text-primary mr-2"></i>
+                                    <span>1 verre de lait (8g protéines)</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-800 mb-3">Déjeuner (environ 750 kcal)</h4>
+                            <ul class="space-y-2 text-sm text-gray-600">
+                                <li class="flex items-center">
+                                    <i class="ri-checkbox-circle-line text-primary mr-2"></i>
+                                    <span>150g de poulet grillé (35g protéines)</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-checkbox-circle-line text-primary mr-2"></i>
+                                    <span>200g de riz complet (45g glucides)</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-checkbox-circle-line text-primary mr-2"></i>
+                                    <span>Légumes variés (10g glucides)</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-checkbox-circle-line text-primary mr-2"></i>
+                                    <span>1 cuillère d'huile d'olive (14g lipides)</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-800 mb-3">Collation (environ 400 kcal)</h4>
+                            <ul class="space-y-2 text-sm text-gray-600">
+                                <li class="flex items-center">
+                                    <i class="ri-checkbox-circle-line text-primary mr-2"></i>
+                                    <span>1 shake protéiné (25g protéines)</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-checkbox-circle-line text-primary mr-2"></i>
+                                    <span>1 banane (25g glucides)</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-checkbox-circle-line text-primary mr-2"></i>
+                                    <span>30g de noix (15g lipides, 5g protéines)</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-800 mb-3">Dîner (environ 700 kcal)</h4>
+                            <ul class="space-y-2 text-sm text-gray-600">
+                                <li class="flex items-center">
+                                    <i class="ri-checkbox-circle-line text-primary mr-2"></i>
+                                    <span>150g de saumon (30g protéines, 15g lipides)</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-checkbox-circle-line text-primary mr-2"></i>
+                                    <span>200g de patates douces (40g glucides)</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-checkbox-circle-line text-primary mr-2"></i>
+                                    <span>Salade verte avec vinaigrette (5g lipides)</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="ri-checkbox-circle-line text-primary mr-2"></i>
+                                    <span>1 yaourt grec (15g protéines)</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 p-4 bg-primary/5 rounded-lg">
+                        <div class="flex items-center mb-2">
+                            <div class="w-8 h-8 flex items-center justify-center rounded-full bg-primary/20 text-primary mr-2">
+                                <i class="ri-water-flash-line"></i>
+                            </div>
+                            <h4 class="font-medium text-gray-800">Hydratation</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">Bois au minimum 2,5 à 3 litres d'eau par jour. L'hydratation est cruciale pour la récupération musculaire et les performances à l'entraînement.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tracking Tab -->
+            <div id="tracking" class="tab-content">
+                <div class="bg-white rounded shadow-sm p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">Suivi Hebdomadaire</h2>
+                        <div class="flex items-center">
+                            <span class="text-sm text-gray-500 mr-3">Semaine du 6 au 12 mai 2025</span>
+                            <button class="px-3 py-1 bg-gray-100 text-gray-600 !rounded-button hover:bg-gray-200 transition whitespace-nowrap">
+                                <i class="ri-refresh-line mr-1"></i> Réinitialiser
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[768px]">
+                            <thead>
+                                <tr class="border-b border-gray-200">
+                                    <th class="py-3 text-left text-sm font-medium text-gray-500">Objectifs</th>
+                                    <th class="py-3 text-center text-sm font-medium text-gray-500">Lundi</th>
+                                    <th class="py-3 text-center text-sm font-medium text-gray-500">Mardi</th>
+                                    <th class="py-3 text-center text-sm font-medium text-gray-500">Mercredi</th>
+                                    <th class="py-3 text-center text-sm font-medium text-gray-500">Jeudi</th>
+                                    <th class="py-3 text-center text-sm font-medium text-gray-500">Vendredi</th>
+                                    <th class="py-3 text-center text-sm font-medium text-gray-500">Samedi</th>
+                                    <th class="py-3 text-center text-sm font-medium text-gray-500">Dimanche</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-gray-200">
+                                    <td class="py-4 text-sm font-medium text-gray-700">Entraînement effectué</td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="training" data-day="monday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="training" data-day="tuesday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="training" data-day="wednesday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="training" data-day="thursday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="training" data-day="friday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="training" data-day="saturday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="training" data-day="sunday">
+                                    </td>
+                                </tr>
+                                <tr class="border-b border-gray-200">
+                                    <td class="py-4 text-sm font-medium text-gray-700">Calories atteintes</td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="calories" data-day="monday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="calories" data-day="tuesday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="calories" data-day="wednesday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="calories" data-day="thursday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="calories" data-day="friday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="calories" data-day="saturday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="calories" data-day="sunday">
+                                    </td>
+                                </tr>
+                                <tr class="border-b border-gray-200">
+                                    <td class="py-4 text-sm font-medium text-gray-700">Protéines suffisantes</td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="protein" data-day="monday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="protein" data-day="tuesday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="protein" data-day="wednesday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="protein" data-day="thursday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="protein" data-day="friday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="protein" data-day="saturday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="protein" data-day="sunday">
+                                    </td>
+                                </tr>
+                                <tr class="border-b border-gray-200">
+                                    <td class="py-4 text-sm font-medium text-gray-700">Hydratation (2.5L+)</td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="hydration" data-day="monday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="hydration" data-day="tuesday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="hydration" data-day="wednesday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="hydration" data-day="thursday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="hydration" data-day="friday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="hydration" data-day="saturday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="hydration" data-day="sunday">
+                                    </td>
+                                </tr>
+                                <tr class="border-b border-gray-200">
+                                    <td class="py-4 text-sm font-medium text-gray-700">Sommeil (8h+)</td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="sleep" data-day="monday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="sleep" data-day="tuesday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="sleep" data-day="wednesday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="sleep" data-day="thursday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="sleep" data-day="friday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="sleep" data-day="saturday">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="checkbox" class="checkbox-item" data-type="sleep" data-day="sunday">
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-8">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-4">Statistiques Hebdomadaires</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                            <div class="bg-gray-50 p-4 rounded">
+                                <p class="text-sm text-gray-500">Entraînements</p>
+                                <div class="flex items-end gap-2">
+                                    <p class="text-2xl font-bold text-primary" id="training-count">0</p>
+                                    <p class="text-sm text-gray-500">/ 4 prévus</p>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded">
+                                <p class="text-sm text-gray-500">Calories</p>
+                                <div class="flex items-end gap-2">
+                                    <p class="text-2xl font-bold text-primary" id="calories-count">0</p>
+                                    <p class="text-sm text-gray-500">/ 7 jours</p>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded">
+                                <p class="text-sm text-gray-500">Protéines</p>
+                                <div class="flex items-end gap-2">
+                                    <p class="text-2xl font-bold text-primary" id="protein-count">0</p>
+                                    <p class="text-sm text-gray-500">/ 7 jours</p>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded">
+                                <p class="text-sm text-gray-500">Hydratation</p>
+                                <div class="flex items-end gap-2">
+                                    <p class="text-2xl font-bold text-primary" id="hydration-count">0</p>
+                                    <p class="text-sm text-gray-500">/ 7 jours</p>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded">
+                                <p class="text-sm text-gray-500">Sommeil</p>
+                                <div class="flex items-end gap-2">
+                                    <p class="text-2xl font-bold text-primary" id="sleep-count">0</p>
+                                    <p class="text-sm text-gray-500">/ 7 jours</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-4">Progression Hebdomadaire</h3>
+                        <div class="h-64" id="weeklyProgressChart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tips Tab -->
+            <div id="tips" class="tab-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Main Tips -->
+                    <div class="bg-white rounded shadow-sm p-6">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Conseils Essentiels</h2>
+                        
+                        <div class="space-y-6">
+                            <div class="flex">
+                                <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 mr-4">
+                                    <i class="ri-moon-line ri-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Sommeil</h3>
+                                    <p class="text-gray-600">Dors 8-9 heures par nuit. C'est pendant le sommeil que ton corps libère l'hormone de croissance et répare tes muscles.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex">
+                                <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 mr-4">
+                                    <i class="ri-water-flash-line ri-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Hydratation</h3>
+                                    <p class="text-gray-600">Bois au moins 2,5-3L d'eau par jour. Une déshydratation de seulement 2% peut réduire tes performances de 20%.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex">
+                                <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 mr-4">
+                                    <i class="ri-heart-pulse-line ri-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Respiration</h3>
+                                    <p class="text-gray-600">Expire pendant l'effort (phase concentrique) et inspire pendant le retour (phase excentrique). Ne bloque jamais ta respiration.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex">
+                                <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 mr-4">
+                                    <i class="ri-calendar-check-line ri-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Constance</h3>
+                                    <p class="text-gray-600">La régularité est plus importante que l'intensité. Mieux vaut 3-4 séances modérées par semaine que 2 séances intenses suivies d'abandon.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Tips -->
+                    <div class="bg-white rounded shadow-sm p-6">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Conseils Supplémentaires</h2>
+                        
+                        <div class="space-y-6">
+                            <div class="flex">
+                                <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-green-100 text-green-600 mr-4">
+                                    <i class="ri-restaurant-line ri-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Alimentation</h3>
+                                    <p class="text-gray-600">Mange toutes les 3-4 heures pour maintenir un apport constant de nutriments. Privilégie les aliments complets et non transformés.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex">
+                                <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-green-100 text-green-600 mr-4">
+                                    <i class="ri-timer-line ri-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Récupération</h3>
+                                    <p class="text-gray-600">Respecte 48h de repos entre deux entraînements du même groupe musculaire. La croissance se fait pendant la récupération, pas pendant l'effort.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex">
+                                <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-green-100 text-green-600 mr-4">
+                                    <i class="ri-scales-line ri-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Progression</h3>
+                                    <p class="text-gray-600">Augmente progressivement les charges ou les répétitions. Ton corps s'adapte, il faut constamment le stimuler avec de nouveaux défis.</p>
+                                </div>
+                            </div>
+
+                            <div class="p-4 bg-primary/5 rounded-lg mt-6">
+                                <div class="flex items-center mb-2">
+                                    <div class="w-8 h-8 flex items-center justify-center rounded-full bg-primary/20 text-primary mr-2">
+                                        <i class="ri-information-line"></i>
+                                    </div>
+                                    <h4 class="font-medium text-gray-800">Note importante</h4>
+                                </div>
+                                <p class="text-sm text-gray-600">À ton âge, privilégie la technique parfaite plutôt que les charges lourdes. Ton corps est encore en développement, il est crucial d'éviter les blessures qui pourraient compromettre ta croissance naturelle.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Motivation Quotes -->
+                <div class="mt-6 bg-white rounded shadow-sm p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Citations Motivantes</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-4 bg-primary/5 rounded-lg">
+                            <p class="text-gray-700 italic">"Le succès n'est pas toujours ce que tu vois, mais ce que tu fais quand personne ne regarde."</p>
+                        </div>
+                        <div class="p-4 bg-primary/5 rounded-lg">
+                            <p class="text-gray-700 italic">"La douleur que tu ressens aujourd'hui sera la force que tu ressentiras demain."</p>
+                        </div>
+                        <div class="p-4 bg-primary/5 rounded-lg">
+                            <p class="text-gray-700 italic">"Ne compte pas les jours, fais que les jours comptent."</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-8">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-4">Conseil du Jour</h3>
+                        <div class="p-4 bg-yellow-50 rounded-lg">
+                            <div class="flex">
+                                <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600 mr-4">
+                                    <i class="ri-lightbulb-line ri-lg"></i>
+                                </div>
+                                <div>
+                                    <p class="text-gray-700">Aujourd'hui, concentre-toi sur la qualité de tes mouvements plutôt que sur le poids. Ralentis la phase excentrique (descente) pour maximiser la tension musculaire.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white py-6">
+            <div class="container mx-auto px-4">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="mb-4 md:mb-0">
+                        <h3 class="text-xl font-['Pacifico'] text-white mb-2">MuscuTrack</h3>
+                        <p class="text-gray-400 text-sm">Suivi personnalisé de ta prise de masse</p>
+                    </div>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition">
+                            <i class="ri-instagram-line ri-lg"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition">
+                            <i class="ri-youtube-line ri-lg"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition">
+                            <i class="ri-tiktok-line ri-lg"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="mt-6 pt-6 border-t border-gray-700 text-center text-gray-400 text-sm">
+                    <p>© 2025 MuscuTrack. Tous droits réservés.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab Navigation
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabId = button.getAttribute('data-tab');
+                    
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('text-primary', 'border-b-2', 'border-primary');
+                        btn.classList.add('text-gray-500');
+                    });
+                    
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    button.classList.add('text-primary', 'border-b-2', 'border-primary');
+                    button.classList.remove('text-gray-500');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+
+            // Program Day Navigation
+            const programDayBtns = document.querySelectorAll('.program-day-btn');
+            const programDays = document.querySelectorAll('.program-day');
+
+            programDayBtns.forEach(button => {
+                button.addEventListener('click', () => {
+                    const dayId = button.getAttribute('data-day');
+                    
+                    programDayBtns.forEach(btn => {
+                        btn.classList.remove('bg-primary', 'text-white');
+                        btn.classList.add('bg-gray-200', 'text-gray-700');
+                    });
+                    
+                    programDays.forEach(day => {
+                        day.classList.add('hidden');
+                        day.classList.remove('active');
+                    });
+                    
+                    button.classList.add('bg-primary', 'text-white');
+                    button.classList.remove('bg-gray-200', 'text-gray-700');
+                    
+                    const activeDay = document.querySelector(`.program-day[data-day="${dayId}"]`);
+                    activeDay.classList.remove('hidden');
+                    activeDay.classList.add('active');
+                });
+            });
+
+            // Tracking Checkboxes
+            const checkboxes = document.querySelectorAll('.checkbox-item');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateStats);
+            });
+
+            function updateStats() {
+                const types = ['training', 'calories', 'protein', 'hydration', 'sleep'];
+                
+                types.forEach(type => {
+                    const checked = document.querySelectorAll(`.checkbox-item[data-type="${type}"]:checked`).length;
+                    document.getElementById(`${type}-count`).textContent = checked;
+                });
+                
+                updateWeeklyProgressChart();
+            }
+
+            // Initialize Macros Chart
+            const macrosChart = echarts.init(document.getElementById('macrosChart'));
+            const macrosOption = {
+                animation: false,
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{b}: {c}g ({d}%)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                    textStyle: {
+                        color: '#1f2937'
+                    }
+                },
+                legend: {
+                    orient: 'vertical',
+                    right: 10,
+                    top: 'center',
+                    data: ['Protéines', 'Glucides', 'Lipides'],
+                    textStyle: {
+                        color: '#1f2937'
+                    }
+                },
+                series: [
+                    {
+                        type: 'pie',
+                        radius: '70%',
+                        center: ['40%', '50%'],
+                        data: [
+                            { value: 130, name: 'Protéines', itemStyle: { color: 'rgba(87, 181, 231, 1)' } },
+                            { value: 335, name: 'Glucides', itemStyle: { color: 'rgba(141, 211, 199, 1)' } },
+                            { value: 100, name: 'Lipides', itemStyle: { color: 'rgba(251, 191, 114, 1)' } }
+                        ],
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowOffsetX: 0,
+                                shadowColor: 'rgba(0, 0, 0, 0.5)'
+                            }
+                        },
+                        label: {
+                            color: '#1f2937'
+                        }
+                    }
+                ]
+            };
+            macrosChart.setOption(macrosOption);
+
+            // Initialize Weekly Progress Chart
+            const weeklyProgressChart = echarts.init(document.getElementById('weeklyProgressChart'));
+            
+            function updateWeeklyProgressChart() {
+                const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+                const types = ['training', 'calories', 'protein', 'hydration', 'sleep'];
+                const typesLabels = ['Entraînement', 'Calories', 'Protéines', 'Hydratation', 'Sommeil'];
+                const data = [];
+                
+                types.forEach((type, index) => {
+                    const seriesData = [];
+                    
+                    days.forEach((day, dayIndex) => {
+                        const dayCode = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'][dayIndex];
+                        const isChecked = document.querySelector(`.checkbox-item[data-type="${type}"][data-day="${dayCode}"]`).checked;
+                        seriesData.push(isChecked ? 1 : 0);
+                    });
+                    
+                    data.push({
+                        name: typesLabels[index],
+                        type: 'bar',
+                        stack: 'total',
+                        emphasis: {
+                            focus: 'series'
+                        },
+                        data: seriesData,
+                        itemStyle: {
+                            color: [
+                                'rgba(87, 181, 231, 1)',
+                                'rgba(141, 211, 199, 1)',
+                                'rgba(251, 191, 114, 1)',
+                                'rgba(252, 141, 98, 1)',
+                                'rgba(166, 216, 84, 1)'
+                            ][index]
+                        }
+                    });
+                });
+                
+                const option = {
+                    animation: false,
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'shadow'
+                        },
+                        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                        textStyle: {
+                            color: '#1f2937'
+                        }
+                    },
+                    legend: {
+                        data: typesLabels,
+                        textStyle: {
+                            color: '#1f2937'
+                        }
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: days,
+                        axisLabel: {
+                            color: '#1f2937'
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        max: 5,
+                        axisLabel: {
+                            color: '#1f2937'
+                        }
+                    },
+                    series: data
+                };
+                
+                weeklyProgressChart.setOption(option);
+            }
+            
+            updateWeeklyProgressChart();
+
+            // Handle window resize for charts
+            window.addEventListener('resize', function() {
+                macrosChart.resize();
+                weeklyProgressChart.resize();
+            });
+        });
+    </script>
+</body>
+</html>
